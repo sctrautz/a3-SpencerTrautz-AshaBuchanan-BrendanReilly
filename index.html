@@ -1,9 +1,325 @@
 <!DOCTYPE html>
-<div id="container"></div>
-<script type="module">
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Graphical Perception Experiment</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Georgia, serif;
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 24px 20px;
+      background: #f8f8f8;
+      color: #222;
+    }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    h1 { font-size: 1.5em; margin-bottom: 8px; }
+    h2 { font-size: 1.3em; }
+    svg { display: block; margin: 12px auto; background: white; border: 1px solid #ccc; }
+    input[type="text"] {
+      font-size: 1em; padding: 5px 8px;
+      border: 1px solid #888; border-radius: 2px; width: 120px;
+    }
+    input[type="number"] {
+      font-size: 1.2em; padding: 5px 8px;
+      border: 1px solid #888; border-radius: 2px; width: 90px;
+    }
+    button {
+      font-size: 1em; padding: 7px 20px;
+      background: #222; color: white;
+      border: none; border-radius: 2px; cursor: pointer;
+      margin: 6px 4px 6px 0;
+    }
+    button:hover { background: #444; }
+    #progress { font-size: 0.85em; color: #666; margin-bottom: 4px; }
+    .q-label { font-size: 1.05em; margin: 14px 0 8px; }
+    textarea {
+      width: 100%; height: 200px;
+      font-family: monospace; font-size: 11px;
+      border: 1px solid #ccc; padding: 6px;
+      resize: vertical;
+    }
+    blockquote {
+      border-left: 3px solid #ccc;
+      padding-left: 12px;
+      font-style: italic;
+      margin: 12px 0;
+    }
+  </style>
+</head>
+<body>
 
+<!-- SCREEN: START -->
+<div id="start-screen" class="screen active">
+  <h1>Graphical Perception Experiment</h1>
+  <p>In this study you will view a series of charts. In each chart, two elements are <strong>marked with a dot (●)</strong>. Your task is to answer:</p>
+  <blockquote>"What percentage is the smaller marked value of the larger marked value?"</blockquote>
+  <p>Enter a participant ID and press <em>Start</em>.</p>
+  <label>Participant ID: <input type="text" id="participant-id" placeholder="P1"></label>
+  <br><br>
+  <button id="start-btn">Start</button>
+</div>
+
+<!-- SCREEN: INSTRUCTIONS -->
+<div id="instructions-screen" class="screen">
+  <h2>Instructions</h2>
+  <p>You will complete <strong>60 trials</strong> total — 20 bar charts, 20 pie charts, and 20 stacked bar charts, shown in random order.</p>
+  <p><strong>For each trial:</strong></p>
+  <ol>
+    <li>Find the two elements marked with a <strong>black dot</strong>.</li>
+    <li>Estimate: <em>what percentage is the smaller of the larger?</em></li>
+    <li>Type a whole number (0–100) and press <em>Submit</em> or hit Enter.</li>
+  </ol>
+  <p>Example: if one bar has height 30 and another has height 60, the answer is <strong>50</strong> (30 is 50% of 60).</p>
+  <button id="begin-btn">Begin</button>
+</div>
+
+<!-- SCREEN: TRIAL -->
+<div id="trial-screen" class="screen">
+  <div id="progress"></div>
+  <div id="chart-container"></div>
+  <div class="q-label"><strong>What percentage is the smaller of the larger?</strong><br>
+    <span style="font-size:0.9em; color:#555;">( smaller ÷ larger × 100 ) — enter a whole number 0–100</span></div>
+  <input type="number" id="response" min="0" max="100" step="1" autocomplete="off">
+  <button id="submit-btn">Submit</button>
+</div>
+
+<!-- SCREEN: RESULTS -->
+<div id="results-screen" class="screen">
+  <h2>Session Complete!</h2>
+  <p>Copy the CSV data below and paste it into the master results file:</p>
+  <textarea id="csv-output" readonly></textarea>
+  <br>
+  <button id="copy-btn">Copy to Clipboard</button>
+  <button id="restart-btn">New Participant</button>
+</div>
+
+<script type="module">
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-console.log(d3);
+// ─── CONFIG ───────────────────────────────────────────────────
+const TRIALS_PER_TYPE = 20;
+const TYPES = ['bar', 'pie', 'stackedbar'];
+const W = 500, H = 380;
 
+// ─── STATE ────────────────────────────────────────────────────
+let trials = [], idx = 0, results = [], pid = '';
+
+// ─── DATA GENERATION ──────────────────────────────────────────
+function makeTrial(type) {
+  const n = 5 + Math.floor(Math.random() * 6);             // 5–10 points
+  const data = Array.from({length: n}, () =>
+    Math.floor(Math.random() * 91) + 10);                  // values 10–100
+  let a = Math.floor(Math.random() * n);
+  let b; do { b = Math.floor(Math.random() * n); } while (b === a);
+  const truePercent = Math.round(
+    Math.min(data[a], data[b]) / Math.max(data[a], data[b]) * 100
+  );
+  return { type, data, marked: [a, b], truePercent };
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ─── ERROR (Cleveland & McGill log2 error) ────────────────────
+// Error = log2(|reported - true| + 1/8)
+// Special case: exact match → 0 (avoids log2(1/8) = -3)
+function cmError(reported, truth) {
+  const d = Math.abs(reported - truth);
+  return d === 0 ? 0 : Math.log2(d + 1 / 8);
+}
+
+// ─── DRAW: BAR CHART ──────────────────────────────────────────
+function drawBar(el, { data, marked }) {
+  const m = { t: 30, r: 20, b: 35, l: 45 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
+  const g = svg.append('g').attr('transform', `translate(${m.l},${m.t})`);
+
+  const x = d3.scaleBand().domain(d3.range(data.length))
+    .range([0, iw]).padding(0.25);
+  const y = d3.scaleLinear().domain([0, 100]).range([ih, 0]);
+
+  g.append('g').attr('transform', `translate(0,${ih})`)
+    .call(d3.axisBottom(x).tickFormat(() => ''));
+  g.append('g').call(d3.axisLeft(y).ticks(5));
+
+  // Bars: no fill, black outline (Cleveland style)
+  g.selectAll('rect').data(data).enter().append('rect')
+    .attr('x', (d, i) => x(i)).attr('y', d => y(d))
+    .attr('width', x.bandwidth()).attr('height', d => ih - y(d))
+    .attr('fill', 'none').attr('stroke', '#222').attr('stroke-width', 1.5);
+
+  // Mark: solid dot above each marked bar
+  marked.forEach(i => {
+    g.append('circle')
+      .attr('cx', x(i) + x.bandwidth() / 2)
+      .attr('cy', y(data[i]) - 10)
+      .attr('r', 6).attr('fill', '#222');
+  });
+}
+
+// ─── DRAW: PIE CHART ──────────────────────────────────────────
+function drawPie(el, { data, marked }) {
+  const svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
+  const g = svg.append('g').attr('transform', `translate(${W / 2},${H / 2})`);
+  const R = Math.min(W, H) / 2 - 35;
+
+  // Alternating grayscale fills so slices are distinguishable (no color)
+  const fills = ['#222', '#555', '#888', '#aaa', '#bbb', '#ccc', '#ddd', '#eee', '#333', '#666'];
+
+  const pie = d3.pie().sort(null).value(d => d.val)(
+    data.map((v, i) => ({ val: v, idx: i }))
+  );
+  const arc = d3.arc().innerRadius(0).outerRadius(R);
+  // Marker arc: places centroid at 60% of radius
+  const markerArc = d3.arc().innerRadius(R * 0.6).outerRadius(R * 0.6);
+
+  g.selectAll('path').data(pie).enter().append('path')
+    .attr('d', arc)
+    .attr('fill', (d, i) => fills[i % fills.length])
+    .attr('stroke', 'white').attr('stroke-width', 1.5);
+
+  // Mark: white dot with black stroke at 60% radius
+  pie.forEach(slice => {
+    if (marked.includes(slice.data.idx)) {
+      const [cx, cy] = markerArc.centroid(slice);
+      g.append('circle').attr('cx', cx).attr('cy', cy)
+        .attr('r', 7)
+        .attr('fill', 'white').attr('stroke', '#222').attr('stroke-width', 2.5);
+    }
+  });
+}
+
+// ─── DRAW: STACKED BAR ────────────────────────────────────────
+function drawStackedBar(el, { data, marked }) {
+  const m = { t: 90, r: 30, b: 90, l: 30 };
+  const barW = W - m.l - m.r, barH = H - m.t - m.b;
+  const svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
+  const g = svg.append('g').attr('transform', `translate(${m.l},${m.t})`);
+
+  const total = d3.sum(data);
+  const xScale = d3.scaleLinear().domain([0, total]).range([0, barW]);
+  const fills = ['#222', '#555', '#888', '#aaa', '#bbb', '#ccc', '#ddd', '#eee', '#333', '#666'];
+
+  let cum = 0;
+  data.forEach((v, i) => {
+    const xStart = xScale(cum);
+    const segW = xScale(v);
+    g.append('rect')
+      .attr('x', xStart).attr('y', 0)
+      .attr('width', segW).attr('height', barH)
+      .attr('fill', fills[i % fills.length])
+      .attr('stroke', 'white').attr('stroke-width', 1);
+
+    if (marked.includes(i)) {
+      g.append('circle')
+        .attr('cx', xStart + segW / 2).attr('cy', barH / 2)
+        .attr('r', 8)
+        .attr('fill', 'white').attr('stroke', '#222').attr('stroke-width', 2.5);
+    }
+    cum += v;
+  });
+
+  // Border
+  g.append('rect').attr('x', 0).attr('y', 0)
+    .attr('width', barW).attr('height', barH)
+    .attr('fill', 'none').attr('stroke', '#222').attr('stroke-width', 2);
+}
+
+// ─── EXPERIMENT FLOW ──────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  pid = document.getElementById('participant-id').value.trim();
+  if (!pid) { alert('Please enter a participant ID.'); return; }
+  show('instructions-screen');
+});
+
+document.getElementById('begin-btn').addEventListener('click', () => {
+  trials = shuffle(
+    TYPES.flatMap(type =>
+      Array.from({ length: TRIALS_PER_TYPE }, () => makeTrial(type))
+    )
+  );
+  idx = 0; results = [];
+  show('trial-screen');
+  renderTrial();
+});
+
+function renderTrial() {
+  const t = trials[idx];
+  document.getElementById('progress').textContent =
+    `Trial ${idx + 1} / ${trials.length}`;
+  const c = document.getElementById('chart-container');
+  c.innerHTML = '';
+  if (t.type === 'bar') drawBar(c, t);
+  else if (t.type === 'pie') drawPie(c, t);
+  else drawStackedBar(c, t);
+  const resp = document.getElementById('response');
+  resp.value = '';
+  resp.focus();
+}
+
+function submit() {
+  const v = parseInt(document.getElementById('response').value, 10);
+  if (isNaN(v) || v < 0 || v > 100) {
+    alert('Please enter a whole number between 0 and 100.');
+    return;
+  }
+  const t = trials[idx];
+  results.push({
+    participant: pid,
+    trial: idx + 1,
+    type: t.type,
+    truePercent: t.truePercent,
+    reported: v,
+    error: cmError(v, t.truePercent).toFixed(4)
+  });
+  idx++;
+  if (idx < trials.length) renderTrial();
+  else finishSession();
+}
+
+document.getElementById('submit-btn').addEventListener('click', submit);
+document.getElementById('response').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submit();
+});
+
+function finishSession() {
+  const rows = [
+    'participant,trial,chartType,truePercent,reportedPercent,error',
+    ...results.map(r =>
+      `${r.participant},${r.trial},${r.type},${r.truePercent},${r.reported},${r.error}`)
+  ];
+  document.getElementById('csv-output').value = rows.join('\n');
+  show('results-screen');
+}
+
+document.getElementById('copy-btn').addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('csv-output').value)
+    .then(() => alert('Copied!'))
+    .catch(() => {
+      document.getElementById('csv-output').select();
+      document.execCommand('copy');
+    });
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  document.getElementById('participant-id').value = '';
+  show('start-screen');
+});
 </script>
+</body>
+</html>
