@@ -1,7 +1,7 @@
 Assignment 3 – Replicating a Classic Experiment
 ===
 
-**Live experiment:** [https://spencertrautz.github.io/a3-experiment/](https://spencertrautz.github.io/a3-experiment/)
+**Live experiment:** [https://sctrautz.github.io/a3-experiment/](https://sctrautz.github.io/a3-experiment/)
 
 ---
 
