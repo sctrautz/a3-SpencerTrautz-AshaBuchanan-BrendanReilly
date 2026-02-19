@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Experiment Results (D3)</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 18px 30px;
+      font-family: Georgia, serif;
+      background: #f8f8f8;
+      color: #222;
+    }
+    main {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+    p {
+      margin: 0 0 14px;
+      line-height: 1.45;
+    }
+    #chart {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+    svg text {
+      font-family: Georgia, serif;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 760px;
+      background: #fff;
+      border: 1px solid #ccc;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 0.96rem;
+    }
+    th {
+      background: #f1f1f1;
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .muted {
+      color: #555;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Graphical Perception Results</h1>
+  <p>Average log2 error by chart type with bootstrapped 95% confidence intervals. Lower is better.</p>
+
+  <div id="chart"></div>
+
+  <table id="results-table" aria-label="Bootstrapped results table">
+    <thead>
+    <tr>
+      <th>Rank</th>
+      <th>Chart Type</th>
+      <th>Avg log2 Error</th>
+      <th>95% CI Lower</th>
+      <th>95% CI Upper</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <p class="muted">Bootstrap details: 20,000 resamples, sampling with replacement within each chart type. Data source: <span class="mono">data/master.csv</span>.</p>
+</main>
+
+<script type="module">
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+const RESAMPLES = 20000;
+const CHART_LABELS = {
+  bar: "Bar",
+  pie: "Pie",
+  stackedbar: "Stacked Bar"
+};
+
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return function rng() {
+    t += 0x6D2B79F5;
+    let x = Math.imul(t ^ (t >>> 15), t | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function bootstrapCI(values, resamples, rng) {
+  const n = values.length;
+  const means = new Array(resamples);
+
+  for (let i = 0; i < resamples; i++) {
+    let sum = 0;
+    for (let j = 0; j < n; j++) {
+      const idx = Math.floor(rng() * n);
+      sum += values[idx];
+    }
+    means[i] = sum / n;
+  }
+
+  means.sort((a, b) => a - b);
+  const lo = means[Math.floor(0.025 * resamples)];
+  const hi = means[Math.floor(0.975 * resamples)];
+  return { lo, hi };
+}
+
+function format4(x) {
+  return d3.format(".4f")(x);
+}
+
+function renderChart(stats) {
+  const width = 980;
+  const height = 500;
+  const margin = { top: 90, right: 230, bottom: 95, left: 240 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+
+  const xMin = d3.min(stats, d => d.lo);
+  const xMax = d3.max(stats, d => d.hi);
+  const pad = (xMax - xMin) * 0.15;
+  const x = d3.scaleLinear()
+    .domain([xMin - pad, xMax + pad])
+    .range([0, innerWidth]);
+
+  const y = d3.scalePoint()
+    .domain(stats.map(d => d.chart))
+    .range([0, innerHeight])
+    .padding(0.8);
+
+  const chart = d3.select("#chart")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .style("display", "block");
+
+  const g = chart.append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const xTicks = x.ticks(6);
+
+  g.selectAll(".grid-line")
+    .data(xTicks)
+    .enter()
+    .append("line")
+    .attr("class", "grid-line")
+    .attr("x1", d => x(d))
+    .attr("x2", d => x(d))
+    .attr("y1", 0)
+    .attr("y2", innerHeight)
+    .attr("stroke", "#e7e7e7");
+
+  g.append("g")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format(".2f")))
+    .call(axis => axis.selectAll("line").attr("stroke", "#666"))
+    .call(axis => axis.selectAll("text").attr("fill", "#555"))
+    .call(axis => axis.select(".domain").attr("stroke", "#666"));
+
+  chart.append("text")
+    .attr("x", margin.left + innerWidth / 2)
+    .attr("y", height - 18)
+    .attr("text-anchor", "middle")
+    .attr("font-size", 16)
+    .attr("fill", "#444")
+    .text("Mean log2 error");
+
+  const rowHeight = innerHeight / stats.length;
+  g.selectAll(".row-band")
+    .data(stats)
+    .enter()
+    .append("rect")
+    .attr("class", "row-band")
+    .attr("x", 0)
+    .attr("y", d => y(d.chart) - rowHeight / 2)
+    .attr("width", innerWidth)
+    .attr("height", rowHeight)
+    .attr("fill", (d, i) => i % 2 ? "#f8f8f8" : "#ffffff");
+
+  const color = d3.scaleOrdinal()
+    .domain(stats.map(d => d.chart))
+    .range(["#222", "#666", "#a0a0a0"]);
+
+  // Keep rank markers in a separate left column so they don't collide with long labels.
+  const rankLabelX = -136;
+  const nameLabelX = -14;
+
+  const rows = g.selectAll(".row")
+    .data(stats)
+    .enter()
+    .append("g")
+    .attr("class", "row")
+    .attr("transform", d => `translate(0,${y(d.chart)})`);
+
+  rows.append("line")
+    .attr("x1", d => x(d.lo))
+    .attr("x2", d => x(d.hi))
+    .attr("y1", 0)
+    .attr("y2", 0)
+    .attr("stroke", "#333")
+    .attr("stroke-width", 3)
+    .attr("stroke-linecap", "round");
+
+  rows.append("line")
+    .attr("x1", d => x(d.lo))
+    .attr("x2", d => x(d.lo))
+    .attr("y1", -7)
+    .attr("y2", 7)
+    .attr("stroke", "#333")
+    .attr("stroke-width", 2);
+
+  rows.append("line")
+    .attr("x1", d => x(d.hi))
+    .attr("x2", d => x(d.hi))
+    .attr("y1", -7)
+    .attr("y2", 7)
+    .attr("stroke", "#333")
+    .attr("stroke-width", 2);
+
+  rows.append("circle")
+    .attr("cx", d => x(d.mean))
+    .attr("cy", 0)
+    .attr("r", 7.5)
+    .attr("fill", d => color(d.chart))
+    .attr("stroke", "#111")
+    .attr("stroke-width", 1);
+
+  rows.append("text")
+    .attr("x", rankLabelX)
+    .attr("y", 5)
+    .attr("text-anchor", "end")
+    .attr("font-size", 16)
+    .attr("fill", "#555")
+    .text((d, i) => `#${i + 1}`);
+
+  rows.append("text")
+    .attr("x", nameLabelX)
+    .attr("y", 6)
+    .attr("text-anchor", "end")
+    .attr("font-size", 20)
+    .attr("fill", "#222")
+    .text(d => CHART_LABELS[d.chart]);
+
+  rows.append("text")
+    .attr("x", innerWidth + 16)
+    .attr("y", -3)
+    .attr("font-size", 13)
+    .attr("fill", "#444")
+    .text(d => `mean ${format4(d.mean)}`);
+
+  rows.append("text")
+    .attr("x", innerWidth + 16)
+    .attr("y", 15)
+    .attr("font-size", 12)
+    .attr("fill", "#666")
+    .text(d => `95% CI [${format4(d.lo)}, ${format4(d.hi)}]`);
+}
+
+function renderTable(stats) {
+  const tbody = d3.select("#results-table tbody");
+
+  tbody.selectAll("tr")
+    .data(stats)
+    .enter()
+    .append("tr")
+    .html((d, i) => [
+      `<td>${i + 1}</td>`,
+      `<td>${CHART_LABELS[d.chart]}</td>`,
+      `<td>${format4(d.mean)}</td>`,
+      `<td>${format4(d.lo)}</td>`,
+      `<td>${format4(d.hi)}</td>`
+    ].join(""));
+}
+
+async function init() {
+  const rows = await d3.csv("./data/master.csv", d => ({
+    chartType: d.chartType,
+    error: Number(d.error)
+  }));
+
+  const grouped = d3.group(rows, d => d.chartType);
+  const rng = mulberry32(4241);
+
+  const stats = Array.from(grouped, ([chart, values]) => {
+    const errors = values.map(v => v.error);
+    const mean = d3.mean(errors);
+    const { lo, hi } = bootstrapCI(errors, RESAMPLES, rng);
+    return { chart, mean, lo, hi };
+  }).sort((a, b) => a.mean - b.mean);
+
+  renderChart(stats);
+  renderTable(stats);
+}
+
+init().catch(err => {
+  console.error(err);
+  const chart = document.getElementById("chart");
+  chart.innerHTML = `<p style="color:#900; margin:0;">Failed to load data/master.csv. ${String(err)}</p>`;
+});
+</script>
+</body>
+</html>

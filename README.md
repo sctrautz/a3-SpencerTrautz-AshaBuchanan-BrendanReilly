@@ -41,19 +41,21 @@ Each participant completes **60 trials** (20 per chart type) in randomized order
 
 ## Results
 
-After collecting data from 10 participants (600 total trials, 200 per chart type), average log₂ error by condition ordered best → worst:
+Using `data/master.csv` (10 participants, 600 total trials, 200 per chart type), average log₂ error by condition ordered best → worst:
 
 | Rank | Chart Type | Avg log₂ Error | 95% CI Lower | 95% CI Upper |
 |------|-----------|---------------|-------------|-------------|
-| 1 | Bar | [TBD] | [TBD] | [TBD] |
-| 2 | Stacked Bar | [TBD] | [TBD] | [TBD] |
-| 3 | Pie | [TBD] | [TBD] | [TBD] |
+| 1 | Bar | 2.0658 | 1.8074 | 2.3282 |
+| 2 | Pie | 2.6625 | 2.4516 | 2.8719 |
+| 3 | Stacked Bar | 3.0709 | 2.8713 | 3.2709 |
 
-*(Fill in after running the experiment and computing bootstrapped CIs in R/Python/Excel.)*
+*(95% CIs computed by bootstrap resampling of trials, 20,000 resamples.)*
 
 **Results Figure:**
 
-*(Insert ggplot2 or matplotlib figure with bootstrapped 95% confidence intervals here.)*
+![Bootstrapped results figure](img/results-bootstrap.svg)
+
+**D3 Results View (computed + rendered with D3):** [results.html](results.html)
 
 ---
 
@@ -76,7 +78,7 @@ Error = log₂(|reportedPercent − truePercent| + 1/8)
 1. Open the experiment in a browser (local or via gh-pages).
 2. Enter a unique Participant ID (e.g. `P1`, `P2`, ...).
 3. Complete all 60 trials.
-4. At the end, copy the CSV output and append it to `data/results.csv`.
+4. At the end, copy the CSV output and append it to `data/master.csv`.
 5. Repeat for each participant.
 
 CSV columns: `participant, trial, chartType, truePercent, reportedPercent, error`
