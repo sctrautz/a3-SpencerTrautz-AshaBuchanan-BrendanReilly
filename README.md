@@ -53,6 +53,8 @@ Using `data/master.csv` (10 participants, 600 total trials, 200 per chart type),
 
 **D3 Results View (computed + rendered with D3):** [results.html](results.html)
 
+![D3 results chart screenshot](img/d3-screenshot.png)
+
 ---
 
 ## Error Calculation
