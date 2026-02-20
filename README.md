@@ -15,9 +15,9 @@ Three chart types (conditions) are tested:
 
 | Condition | Hypothesis |
 |-----------|-----------|
-| **Bar Chart** | Best accuracy — judging aligned lengths is easiest (Cleveland & McGill's top-ranked elementary task) |
-| **Pie Chart** | Intermediate accuracy — angle/area is harder than length, but easier than no-baseline comparisons. |
-| **Stacked Bar Chart** | Worst accuracy — length without a common baseline is hardest. |
+| **Bar Chart** | Best accuracy - judging aligned lengths is easiest (Cleveland & McGill's top-ranked elementary task) |
+| **Pie Chart** | Intermediate accuracy - angle/area is harder than length, but easier than no-baseline comparisons. |
+| **Stacked Bar Chart** | Worst accuracy - length without a common baseline is hardest. |
 
 Each participant completes **60 trials** (20 per chart type) in randomized order. Data is exported as CSV and compiled into a master results file for analysis.
 
@@ -49,7 +49,7 @@ Using `data/master.csv` (10 participants, 600 total trials, 200 per chart type),
 | 2 | Pie | 2.6625 | 2.4516 | 2.8719 |
 | 3 | Stacked Bar | 3.0709 | 2.8713 | 3.2709 |
 
-*(95% CIs computed by bootstrap resampling of trials, 20,000 resamples.)*
+*(95% CIs computed via percentile bootstrap over trial errors - 20,000 resamples)*
 
 **D3 Results View (computed + rendered with D3):** [results.html](results.html)
 
@@ -85,18 +85,18 @@ CSV columns: `participant, trial, chartType, truePercent, reportedPercent, error
 
 ## Technical Achievements
 
-- **D3 visualizations** — all three chart types (bar, pie, stacked bar) rendered entirely with D3, written from scratch with no chart library.
-- **Fully randomized experiment** — trial order is shuffled using a Fisher–Yates shuffle; data points are randomly generated each trial (5–10 points, values 10–100).
-- **Cleveland & McGill error metric** — implemented exactly as described in the original paper, including the special-case handling for exact matches.
-- **Single-page experiment flow** — start → instructions → trials → CSV export, all in one HTML file with no server required.
-- **Keyboard support** — Enter key advances trials for faster data collection.
+- **D3 visualizations** - all three chart types (bar, pie, stacked bar) rendered entirely with D3, written from scratch with no chart library.
+- **Fully randomized experiment** - trial order is shuffled using a Fisher–Yates shuffle; data points are randomly generated each trial (5–10 points, values 10–100).
+- **Cleveland & McGill error metric** - implemented exactly as described in the original paper, including the special-case handling for exact matches.
+- **Single-page experiment flow** - start → instructions → trials → CSV export, all in one HTML file with no server required.
+- **Keyboard support** - Enter key advances trials for faster data collection.
 
 ## Design Achievements
 
-- **Cleveland & McGill visual style** — bar charts use unfilled bars (outline only) with solid dots above marked bars, closely matching the original paper's figure style.
-- **Neutral grayscale throughout** — pie and stacked bar charts use alternating grayscale fills (no color) to keep slices/segments visually distinguishable without biasing the perceptual task.
-- **Marker visibility** — markers on dark segments use white fill with black stroke; markers on bar charts use solid black, ensuring visibility against all backgrounds without using color.
-- **Minimal, clean UI** — Georgia serif font, no distracting elements during trials, progress counter shown clearly.
+- **Cleveland & McGill visual style** - bar charts use unfilled bars (outline only) with solid dots above marked bars, closely matching the original paper's figure style.
+- **Neutral grayscale throughout** - pie and stacked bar charts use alternating grayscale fills (no color) to keep slices/segments visually distinguishable without biasing the perceptual task.
+- **Marker visibility** - markers on dark segments use white fill with black stroke; markers on bar charts use solid black, ensuring visibility against all backgrounds without using color.
+- **Minimal, clean UI** - Georgia serif font, no distracting elements during trials, progress counter shown clearly.
 
 ---
 
