@@ -52,7 +52,7 @@
 </head>
 <body>
 
-<!-- SCREEN: START -->
+// Start Screen
 <div id="start-screen" class="screen active">
   <h1>Graphical Perception Experiment</h1>
   <p>In this study you will view a series of charts. In each chart, two elements are <strong>marked with a dot (●)</strong>. Your task is to answer:</p>
@@ -63,7 +63,7 @@
   <button id="start-btn">Start</button>
 </div>
 
-<!-- SCREEN: INSTRUCTIONS -->
+// Instructions Screen
 <div id="instructions-screen" class="screen">
   <h2>Instructions</h2>
   <p>You will complete <strong>60 trials</strong> total — 20 bar charts, 20 pie charts, and 20 stacked bar charts, shown in random order.</p>
@@ -77,7 +77,7 @@
   <button id="begin-btn">Begin</button>
 </div>
 
-<!-- SCREEN: TRIAL -->
+// Trial Screen
 <div id="trial-screen" class="screen">
   <div id="progress"></div>
   <div id="chart-container"></div>
@@ -87,7 +87,7 @@
   <button id="submit-btn">Submit</button>
 </div>
 
-<!-- SCREEN: RESULTS -->
+// Results Screen
 <div id="results-screen" class="screen">
   <h2>Session Complete!</h2>
   <p>Copy the CSV data below and paste it into the master results file:</p>
@@ -100,15 +100,12 @@
 <script type="module">
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-// ─── CONFIG ───────────────────────────────────────────────────
 const TRIALS_PER_TYPE = 20;
 const TYPES = ['bar', 'pie', 'stackedbar'];
 const W = 500, H = 380;
 
-// ─── STATE ────────────────────────────────────────────────────
 let trials = [], idx = 0, results = [], pid = '';
 
-// ─── DATA GENERATION ──────────────────────────────────────────
 function makeTrial(type) {
   const n = 5 + Math.floor(Math.random() * 6);             // 5–10 points
   const data = Array.from({length: n}, () =>
@@ -129,7 +126,6 @@ function shuffle(arr) {
   return arr;
 }
 
-// ─── ERROR (Cleveland & McGill log2 error) ────────────────────
 // Error = log2(|reported - true| + 1/8)
 // Special case: exact match → 0 (avoids log2(1/8) = -3)
 function cmError(reported, truth) {
@@ -137,7 +133,7 @@ function cmError(reported, truth) {
   return d === 0 ? 0 : Math.log2(d + 1 / 8);
 }
 
-// ─── DRAW: BAR CHART ──────────────────────────────────────────
+// Draw Bar Chart
 function drawBar(el, { data, marked }) {
   const m = { t: 30, r: 20, b: 35, l: 45 };
   const iw = W - m.l - m.r, ih = H - m.t - m.b;
@@ -167,20 +163,20 @@ function drawBar(el, { data, marked }) {
   });
 }
 
-// ─── DRAW: PIE CHART ──────────────────────────────────────────
+// Draw Pie Chart
 function drawPie(el, { data, marked }) {
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
   const g = svg.append('g').attr('transform', `translate(${W / 2},${H / 2})`);
   const R = Math.min(W, H) / 2 - 35;
 
-  // Alternating grayscale fills so slices are distinguishable (no color)
+  // Alternating grayscale
   const fills = ['#222', '#555', '#888', '#aaa', '#bbb', '#ccc', '#ddd', '#eee', '#333', '#666'];
 
   const pie = d3.pie().sort(null).value(d => d.val)(
     data.map((v, i) => ({ val: v, idx: i }))
   );
   const arc = d3.arc().innerRadius(0).outerRadius(R);
-  // Marker arc: places centroid at 60% of radius
+
   const markerArc = d3.arc().innerRadius(R * 0.6).outerRadius(R * 0.6);
 
   g.selectAll('path').data(pie).enter().append('path')
@@ -188,7 +184,6 @@ function drawPie(el, { data, marked }) {
     .attr('fill', (d, i) => fills[i % fills.length])
     .attr('stroke', 'white').attr('stroke-width', 1.5);
 
-  // Mark: white dot with black stroke at 60% radius
   pie.forEach(slice => {
     if (marked.includes(slice.data.idx)) {
       const [cx, cy] = markerArc.centroid(slice);
@@ -199,7 +194,7 @@ function drawPie(el, { data, marked }) {
   });
 }
 
-// ─── DRAW: STACKED BAR ────────────────────────────────────────
+// Draw Stacked Bar
 function drawStackedBar(el, { data, marked }) {
   const m = { t: 90, r: 30, b: 90, l: 30 };
   const barW = W - m.l - m.r, barH = H - m.t - m.b;
@@ -235,7 +230,7 @@ function drawStackedBar(el, { data, marked }) {
     .attr('fill', 'none').attr('stroke', '#222').attr('stroke-width', 2);
 }
 
-// ─── EXPERIMENT FLOW ──────────────────────────────────────────
+// Experiment Flow
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');

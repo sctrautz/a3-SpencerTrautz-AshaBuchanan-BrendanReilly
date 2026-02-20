@@ -200,7 +200,6 @@ function renderChart(stats) {
     .domain(stats.map(d => d.chart))
     .range(["#222", "#666", "#a0a0a0"]);
 
-  // Keep rank markers in a separate left column so they don't collide with long labels.
   const rankLabelX = -136;
   const nameLabelX = -14;
 
