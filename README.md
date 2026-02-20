@@ -51,10 +51,6 @@ Using `data/master.csv` (10 participants, 600 total trials, 200 per chart type),
 
 *(95% CIs computed by bootstrap resampling of trials, 20,000 resamples.)*
 
-**Results Figure:**
-
-![Bootstrapped results figure](img/results-bootstrap.svg)
-
 **D3 Results View (computed + rendered with D3):** [results.html](results.html)
 
 ---
