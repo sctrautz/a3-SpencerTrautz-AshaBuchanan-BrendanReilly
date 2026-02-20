@@ -74,7 +74,7 @@ Error = log₂(|reportedPercent − truePercent| + 1/8)
 ## Data Collection Instructions
 
 1. Open the experiment in a browser (local or via gh-pages).
-2. Enter a unique Participant ID (e.g. `P1`, `P2`, ...).
+2. Enter a unique Participant ID.
 3. Complete all 60 trials.
 4. At the end, copy the CSV output and append it to `data/master.csv`.
 5. Repeat for each participant.
