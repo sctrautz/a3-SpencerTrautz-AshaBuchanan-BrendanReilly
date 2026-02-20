@@ -87,7 +87,7 @@ CSV columns: `participant, trial, chartType, truePercent, reportedPercent, error
 
 ## Technical Achievements
 
-- **Pure D3 v7 visualizations** — all three chart types (bar, pie, stacked bar) rendered entirely with D3, written from scratch with no chart library.
+- **D3 visualizations** — all three chart types (bar, pie, stacked bar) rendered entirely with D3, written from scratch with no chart library.
 - **Fully randomized experiment** — trial order is shuffled using a Fisher–Yates shuffle; data points are randomly generated each trial (5–10 points, values 10–100).
 - **Cleveland & McGill error metric** — implemented exactly as described in the original paper, including the special-case handling for exact matches.
 - **Single-page experiment flow** — start → instructions → trials → CSV export, all in one HTML file with no server required.
