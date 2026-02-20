@@ -25,15 +25,15 @@ Each participant completes **60 trials** (20 per chart type) in randomized order
 
 **Bar Chart Trial:**
 
-![bar chart example](img/example-bar.png)
+<img width="500" height="450" alt="Screenshot 2026-02-19 at 11 07 45 PM" src="https://github.com/user-attachments/assets/830f2669-c263-4c17-bffc-6e25c02d4613" />
 
 **Pie Chart Trial:**
 
-![pie chart example](img/example-pie.png)
+<img width="500" height="450" alt="Screenshot 2026-02-19 at 11 08 53 PM" src="https://github.com/user-attachments/assets/d9174561-b70d-4aec-974f-0bd44dc7820b" />
 
 **Stacked Bar Chart Trial:**
 
-![stacked bar example](img/example-stacked.png)
+<img width="500" height="450" alt="Screenshot 2026-02-19 at 11 10 08 PM" src="https://github.com/user-attachments/assets/023ba8df-7370-48a2-b728-ff7f2d384d28" />
 
 *(Screenshots taken from a live session — two elements marked with ● dots.)*
 
