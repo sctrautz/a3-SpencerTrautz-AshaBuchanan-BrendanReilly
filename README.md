@@ -16,8 +16,8 @@ Three chart types (conditions) are tested:
 | Condition | Hypothesis |
 |-----------|-----------|
 | **Bar Chart** | Best accuracy — judging aligned lengths is easiest (Cleveland & McGill's top-ranked elementary task) |
-| **Pie Chart** | Worst accuracy — angle/area judgments are less accurate than length judgments |
-| **Stacked Bar Chart** | Intermediate accuracy — length judgment without a common baseline is harder than aligned bars |
+| **Pie Chart** | Intermediate accuracy — angle/area is harder than length, but easier than no-baseline comparisons. |
+| **Stacked Bar Chart** | Worst accuracy — length without a common baseline is hardest. |
 
 Each participant completes **60 trials** (20 per chart type) in randomized order. Data is exported as CSV and compiled into a master results file for analysis.
 
