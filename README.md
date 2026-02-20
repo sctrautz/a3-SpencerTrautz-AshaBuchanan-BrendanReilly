@@ -19,7 +19,7 @@ Three chart types (conditions) are tested:
 | **Pie Chart** | Intermediate accuracy - angle/area is harder than length, but easier than no-baseline comparisons. |
 | **Stacked Bar Chart** | Worst accuracy - length without a common baseline is hardest. |
 
-Each participant completes **60 trials** (20 per chart type) in randomized order. Data is exported as CSV and compiled into a master results file for analysis.
+Each participant completes **60 trials** (20 per chart type) in randomized order. Data is exported as CSV and compiled into a master results file for analysis. The study was conducted by distributing the link to participants and allowing them to complete the tasks. The completed results were then saved as a txt file and compiled into a master csv file. 
 
 ### Experiment Screenshots
 
